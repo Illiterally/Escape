@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Puzzle Sample</title>
+
+  <style>
+    :root {
+      --bg: #070707;
+      --panel: #121212;
+      --panel-2: #1b1b1b;
+      --panel-3: #242424;
+      --ink: #f2efe7;
+      --muted: #b3aca0;
+      --line: rgba(255, 255, 255, 0.12);
+      --line-2: rgba(255, 255, 255, 0.18);
+      --accent: #f28c38;
+      --accent-soft: rgba(242, 140, 56, 0.14);
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.55);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(242, 140, 56, 0.06), transparent 28%),
+        radial-gradient(circle at 80% 90%, rgba(242, 140, 56, 0.04), transparent 26%),
+        radial-gradient(circle at center, #181818 0%, #0e0e0e 50%, #060606 100%);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .layout {
+      width: min(1280px, 100%);
+      display: grid;
+      grid-template-columns: minmax(420px, 1fr) 340px;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+    }
+
+    .board-card {
+      padding: 18px 18px 16px;
+    }
+
+    .top-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 56px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.025));
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--muted);
+      font-size: 14px;
+      letter-spacing: 0.01em;
+      margin-bottom: 16px;
+      padding: 10px 16px;
+      text-align: center;
+    }
+
+    .puzzle-frame {
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      border-radius: 24px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at center, rgba(242, 140, 56, 0.05), transparent 35%),
+        radial-gradient(circle at center, #0d0d0d 0%, #090909 58%, #050505 100%);
+      border: 1px solid rgba(255,255,255,0.06);
+      position: relative;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .controls-card {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .title-box,
+    .control-row,
+    .actions {
+      border-radius: var(--radius-lg);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .title-box {
+      padding: 16px 18px;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1.3;
+      color: var(--ink);
+    }
+
+    .rows {
+      display: grid;
+      gap: 10px;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 12px 12px 14px;
+    }
+
+    .control-row span {
+      color: var(--ink);
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      line-height: 1;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: linear-gradient(180deg, #252525, #171717);
+      color: var(--ink);
+      border-radius: 12px;
+      min-width: 42px;
+      min-height: 42px;
+      padding: 0 12px;
+      cursor: pointer;
+      font-size: 18px;
+      font-weight: 800;
+      transition: 140ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(242, 140, 56, 0.9);
+      color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(242, 140, 56, 0.14) inset;
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .actions button {
+      min-width: 0;
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .ring-bg {
+      fill: rgba(255,255,255,0.028);
+      stroke: rgba(255,255,255,0.10);
+      stroke-width: 1.4;
+    }
+
+    .ring-bg.alt {
+      fill: rgba(242, 140, 56, 0.06);
+    }
+
+    .ring-guide {
+      fill: none;
+      stroke: rgba(255,255,255,0.14);
+      stroke-width: 1;
+      stroke-dasharray: 3 9;
+    }
+
+    .outer-outline {
+      fill: none;
+      stroke: rgba(255,255,255,0.10);
+      stroke-width: 2;
+    }
+
+.message-text {
+  font-family: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  font-style: normal;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: url(#silverFill);
+  opacity: 0.94;
+  stroke: rgba(10, 10, 10, 0.9);
+  stroke-width: 4px;
+  paint-order: stroke fill;
+  letter-spacing: 0.005em;
+  pointer-events: none;
+  user-select: none;
+}
+    .center-cap {
+      fill: #080808;
+      stroke: var(--accent);
+      stroke-width: 4;
+      transition: 180ms ease;
+    }
+
+    .center-dot {
+      fill: var(--accent);
+      transition: 180ms ease;
+    }
+
+    .solved .center-cap {
+      fill: var(--accent);
+      stroke: #f7f2e8;
+    }
+
+    .solved .center-dot {
+      fill: #111;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .controls-card {
+        order: 2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="layout" id="app">
+    <section class="card board-card">
+      <div class="top-strip">
+        Rotate each ring until the message reads normally from left to right.
+      </div>
+
+      <div class="puzzle-frame">
+        <svg id="puzzle" viewBox="0 0 720 720" aria-label="Rotating ring puzzle">
+          <defs id="defs">
+            <linearGradient id="silverFill" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#f4f4f6"></stop>
+              <stop offset="28%" stop-color="#d3d3d8"></stop>
+              <stop offset="52%" stop-color="#b1b3bb"></stop>
+              <stop offset="76%" stop-color="#e1e2e6"></stop>
+              <stop offset="100%" stop-color="#c8c9cf"></stop>
+            </linearGradient>
+          </defs>
+
+          <circle class="outer-outline" cx="360" cy="360" r="348"></circle>
+          <g id="rings"></g>
+
+          <circle class="center-cap" cx="360" cy="360" r="30"></circle>
+          <circle class="center-dot" cx="360" cy="360" r="5"></circle>
+        </svg>
+      </div>
+    </section>
+
+    <aside class="card controls-card">
+      <div class="title-box">M@Por2r's Escapely Submission Puzzle</div>
+
+      <div class="rows" id="rows"></div>
+
+      <div class="actions">
+        <button id="scrambleBtn" type="button">Scramble</button>
+        <button id="resetBtn" type="button">Reset</button>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const NS = "http://www.w3.org/2000/svg";
+    const cx = 360;
+    const cy = 360;
+    const step = 30;
+
+    const rings = [
+      { inner: 300, outer: 346, angle: 0, symbol: "" },
+      { inner: 250, outer: 300, angle: 0, symbol: "" },
+      { inner: 200, outer: 250, angle: 0, symbol: "" },
+      { inner: 150, outer: 200, angle: 0, symbol: "" },
+      { inner: 100, outer: 150, angle: 0, symbol: "" },
+      { inner: 50,  outer: 100, angle: 0, symbol: "" }
+    ];
+
+    const lines = [
+      { text: "ESCAPELY IS",  y: 92,  size: 54 },
+      { text: "ASKING FOR",   y: 156, size: 54 },
+      { text: "FREE PRODUCT", y: 230, size: 58 },
+      { text: "BEFORE THE",   y: 450, size: 54 },
+      { text: "INTERVIEW.",   y: 526, size: 58 },
+      { text: "POOR FORM.",   y: 604, size: 54 }
+    ];
+
+    const symbolPool = ["✦", "◆", "☾", "◈", "✶", "⬢", "✺", "⟡", "✢", "⬟", "❖", "✹"];
+
+    const defs = document.getElementById("defs");
+    const ringLayer = document.getElementById("rings");
+    const rows = document.getElementById("rows");
+    const app = document.getElementById("app");
+    const scrambleBtn = document.getElementById("scrambleBtn");
+    const resetBtn = document.getElementById("resetBtn");
+
+    function makeEl(tag, attrs = {}) {
+      const el = document.createElementNS(NS, tag);
+      Object.entries(attrs).forEach(([key, value]) => el.setAttribute(key, value));
+      return el;
+    }
+
+    function shuffle(list) {
+      const copy = [...list];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function circlePath(radius, clockwise = true) {
+      const sweep = clockwise ? 1 : 0;
+      return [
+        `M ${cx - radius} ${cy}`,
+        `A ${radius} ${radius} 0 1 ${sweep} ${cx + radius} ${cy}`,
+        `A ${radius} ${radius} 0 1 ${sweep} ${cx - radius} ${cy}`
+      ].join(" ");
+    }
+
+    function annulusPath(inner, outer) {
+      return [
+        circlePath(outer, true),
+        circlePath(inner, false)
+      ].join(" ");
+    }
+
+    function addMessage(parent) {
+      lines.forEach(line => {
+        const text = makeEl("text", {
+          x: cx,
+          y: line.y,
+          class: "message-text",
+          "font-size": line.size
+        });
+        text.textContent = line.text;
+        parent.appendChild(text);
+      });
+    }
+
+    function normalize(deg) {
+      return ((deg % 360) + 360) % 360;
+    }
+
+    function setRotation(index, degrees) {
+      rings[index].angle = normalize(degrees);
+
+      const rotor = document.querySelector(`.rotor[data-ring="${index}"]`);
+      rotor.setAttribute(
+        "transform",
+        `rotate(${rings[index].angle} ${cx} ${cy})`
+      );
+
+      checkSolved();
+    }
+
+    function checkSolved() {
+      const solved = rings.every(ring => normalize(ring.angle) === 0);
+      app.classList.toggle("solved", solved);
+    }
+
+    function buildPuzzle() {
+      rings.forEach((ring, index) => {
+        const clip = makeEl("clipPath", {
+          id: `clip-ring-${index}`,
+          clipPathUnits: "userSpaceOnUse"
+        });
+
+        const clipPath = makeEl("path", {
+          d: annulusPath(ring.inner, ring.outer),
+          "fill-rule": "evenodd",
+          "clip-rule": "evenodd"
+        });
+
+        clip.appendChild(clipPath);
+        defs.appendChild(clip);
+
+        const rotor = makeEl("g", {
+          class: "rotor",
+          "data-ring": index,
+          "clip-path": `url(#clip-ring-${index})`
+        });
+
+        const bg = makeEl("path", {
+          d: annulusPath(ring.inner, ring.outer),
+          class: `ring-bg ${index % 2 ? "alt" : ""}`,
+          "fill-rule": "evenodd"
+        });
+
+        const guideOuter = makeEl("circle", {
+          cx,
+          cy,
+          r: ring.outer - 8,
+          class: "ring-guide"
+        });
+
+        const guideInner = makeEl("circle", {
+          cx,
+          cy,
+          r: ring.inner + 8,
+          class: "ring-guide"
+        });
+
+        rotor.appendChild(bg);
+        rotor.appendChild(guideOuter);
+        rotor.appendChild(guideInner);
+        addMessage(rotor);
+        ringLayer.appendChild(rotor);
+      });
+    }
+
+    function buildControls() {
+      const symbols = shuffle(symbolPool).slice(0, rings.length);
+      rings.forEach((ring, index) => {
+        ring.symbol = symbols[index];
+      });
+
+      const controlOrder = shuffle(rings.map((_, index) => index));
+
+      controlOrder.forEach(index => {
+        const ring = rings[index];
+
+        const row = document.createElement("div");
+        row.className = "control-row";
+        row.innerHTML = `
+          <span>${ring.symbol}</span>
+          <button type="button" data-ring="${index}" data-dir="-1" aria-label="Rotate symbol ${ring.symbol} counterclockwise">↺</button>
+          <button type="button" data-ring="${index}" data-dir="1" aria-label="Rotate symbol ${ring.symbol} clockwise">↻</button>
+        `;
+        rows.appendChild(row);
+      });
+
+      rows.querySelectorAll("button[data-ring]").forEach(button => {
+        button.addEventListener("click", () => {
+          const index = Number(button.dataset.ring);
+          const dir = Number(button.dataset.dir);
+          setRotation(index, rings[index].angle + dir * step);
+        });
+      });
+    }
+
+    function scramble() {
+      let anyMoved = false;
+
+      rings.forEach((ring, index) => {
+        let turns = Math.floor(Math.random() * 12);
+        if (turns === 0) turns = Math.floor(Math.random() * 11) + 1;
+        if (turns !== 0) anyMoved = true;
+        setRotation(index, turns * step);
+      });
+
+      if (!anyMoved) {
+        setRotation(0, step);
+      }
+    }
+
+    function reset() {
+      rings.forEach((ring, index) => setRotation(index, 0));
+    }
+
+    scrambleBtn.addEventListener("click", scramble);
+    resetBtn.addEventListener("click", reset);
+
+    buildPuzzle();
+    buildControls();
+    reset();
+    scramble();
+  </script>
+</body>
+</html>
