@@ -250,6 +250,82 @@
         order: 2;
       }
     }
+
+    /* Browser layout helper: keeps the puzzle from sizing itself too large on wide/short monitors. */
+    :root {
+      --board-size: 640px;
+      --side-width: 340px;
+      --layout-gap: 22px;
+      --page-pad: 24px;
+    }
+
+    body {
+      min-height: 100dvh;
+      padding: var(--page-pad);
+      overflow: hidden;
+    }
+
+    .layout {
+      width: auto;
+      max-width: none;
+      display: grid;
+      grid-template-columns: calc(var(--board-size) + 36px) var(--side-width);
+      gap: var(--layout-gap);
+      align-items: start;
+      justify-content: center;
+    }
+
+    .board-card {
+      width: calc(var(--board-size) + 36px);
+    }
+
+    .puzzle-frame {
+      width: var(--board-size);
+      height: var(--board-size);
+      aspect-ratio: auto;
+    }
+
+    .controls-card {
+      width: var(--side-width);
+      max-height: calc(100dvh - (var(--page-pad) * 2));
+      overflow-y: auto;
+    }
+
+    .controls-card::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .controls-card::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        overflow: auto;
+      }
+
+      .layout {
+        width: min(100%, calc(var(--board-size) + 36px));
+        grid-template-columns: 1fr;
+      }
+
+      .board-card,
+      .controls-card {
+        width: 100%;
+      }
+
+      .puzzle-frame {
+        width: min(100%, var(--board-size));
+        height: min(calc(100vw - 84px), var(--board-size));
+      }
+
+      .controls-card {
+        max-height: none;
+        overflow: visible;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -492,10 +568,69 @@
     scrambleBtn.addEventListener("click", scramble);
     resetBtn.addEventListener("click", reset);
 
+
+    function fitBrowserLayout() {
+      const root = document.documentElement;
+
+      const viewport = window.visualViewport || window;
+      const vw = viewport.width || window.innerWidth;
+      const vh = viewport.height || window.innerHeight;
+
+      const pagePad = 24;
+      const gap = 22;
+      const sideWidth = 340;
+
+      const boardCardHorizontalPadding = 36;
+      const boardCardVerticalChrome = 106;
+
+      const maxBoard = 680;
+      const minBoard = 360;
+
+      const desktop = vw >= 980;
+
+      let boardSize;
+
+      if (desktop) {
+        const maxByWidth =
+          vw -
+          pagePad * 2 -
+          gap -
+          sideWidth -
+          boardCardHorizontalPadding;
+
+        const maxByHeight =
+          vh -
+          pagePad * 2 -
+          boardCardVerticalChrome;
+
+        boardSize = Math.min(maxBoard, maxByWidth, maxByHeight);
+        boardSize = Math.max(minBoard, boardSize);
+
+        root.style.setProperty("--side-width", `${sideWidth}px`);
+      } else {
+        const maxByWidth = vw - pagePad * 2 - boardCardHorizontalPadding;
+        const maxByHeight = vh * 0.72;
+
+        boardSize = Math.min(maxBoard, maxByWidth, maxByHeight);
+        boardSize = Math.max(320, boardSize);
+
+        root.style.setProperty("--side-width", "100%");
+      }
+
+      root.style.setProperty("--board-size", `${Math.floor(boardSize)}px`);
+    }
+
+    window.addEventListener("resize", fitBrowserLayout);
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", fitBrowserLayout);
+    }
+
     buildPuzzle();
     buildControls();
     reset();
     scramble();
+    fitBrowserLayout();
   </script>
 </body>
 </html>
